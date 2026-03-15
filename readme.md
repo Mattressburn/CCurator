@@ -1,6 +1,3 @@
-Here is a comprehensive README.md for your repository based on the architecture, features, and recent refactoring of the Case Ingestor extension.
-Case Ingestor (Chrome Extension)
-
 Case Ingestor (formerly CaseCleaner / CCurator) is a specialized Chrome extension built to extract, normalize, deduplicate, and package Salesforce Lightning case activity for seamless Large Language Model (LLM) handoff.
 
 Designed specifically for Technical Support Escalation Engineers, this tool pierces through Salesforce's complex Lightning Web Components (LWC) and Shadow DOMs to scrape case histories, strip out noisy email quotes, and generate highly targeted AI prompts for tools like ChatGPT, Claude, Atlassian Rovo, and Copilot Researcher.
