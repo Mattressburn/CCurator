@@ -211,38 +211,111 @@
     };
   }
 
-  // Generates an optimized System Prompt requesting Rovo / Copilot meta-prompts
   function buildAiText(payload) {
-    var lines = [];
+  payload = payload || {};
 
-    lines.push("I am providing a structured JSON payload containing extracted data from a Salesforce support case.");
-    lines.push("Case Number: " + (payload.caseNumber || "unknown") + " | " + (payload.title || ""));
-    lines.push("URL: " + (payload.url || ""));
-    lines.push("");
-    lines.push("Please act as an expert Technical Support Escalation Engineer. I will attach the JSON file separately. Based on the data in the JSON, please generate a comprehensive case analysis following this exact structure:");
-    lines.push("");
-    lines.push("### 1. Case Summary");
-    lines.push("Provide a concise executive summary of the issue, the customer's goal, and the current state of the case.");
-    lines.push("");
-    lines.push("### 2. Environment & Key Facts");
-    lines.push("- **Software/Hardware Versions:** (Extract all exact versions mentioned)");
-    lines.push("- **Exact Error Messages:** (Extract any error codes, logs, or fault messages verbatim)");
-    lines.push("- **Triggers / Recent Changes:** (Identify when this started and what changed immediately prior)");
-    lines.push("");
-    lines.push("### 3. Chronological Timeline");
-    lines.push("Create a clear, deduplicated timeline of events. Highlight how long the issue has been ongoing, what troubleshooting steps have already been taken, and the results of those steps.");
-    lines.push("");
-    lines.push("### 4. Research Prompts for Rovo / Copilot");
-    lines.push("Generate TWO distinct, ready-to-paste prompts that I can feed into our internal AI search tools (like Atlassian Rovo or Copilot Researcher) which search our internal KBs, Jira tickets, and past emails. Follow these strict rules for generating the prompts:");
-    lines.push("- **Assign a Persona:** Start each prompt with 'Act as an expert Support Escalation Engineer specializing in [insert primary hardware/software involved]...'");
-    lines.push("- **Define the Task:** Tell the AI to 'Search the internal knowledge base, past tickets, and engineering notes to find...'");
-    lines.push("- **Prompt 1 (Error-Focused):** Include the exact error messages, logs, or fault codes in quotes, combined with the specific software/hardware versions.");
-    lines.push("- **Prompt 2 (Symptom-Focused):** Describe the exact behavior, failing component, and recent triggers without relying on the exact error code.");
-    lines.push("- **Exclude Noise:** Ensure the generated prompts do NOT contain customer names, dates, case numbers, or PII.");
-    lines.push("Format each of the two generated prompts inside `code blocks` for easy 1-click copying.");
-
-    return lines.join("\n");
+  function safe(value, fallback) {
+    if (value === null || value === undefined) return fallback || "";
+    var s = String(value).trim();
+    return s ? s : (fallback || "");
   }
+
+  function oneLine(value, fallback) {
+    return safe(value, fallback).replace(/\s+/g, " ").trim();
+  }
+
+  var caseNumber = oneLine(payload.caseNumber, "unknown");
+  var title = oneLine(payload.title, "Untitled case");
+  var url = safe(payload.url, "");
+  var primaryProduct = oneLine(
+    payload.primaryProduct || payload.product || payload.software || payload.hardware,
+    "the primary product or component identified in the JSON"
+  );
+
+  var lines = [];
+
+  lines.push("You are an expert Technical Support Escalation Engineer and AI research prompt writer.");
+  lines.push("");
+  lines.push("## Source of truth");
+  lines.push("Use ONLY the attached JSON payload as the source of truth.");
+  lines.push("Do NOT invent, assume, infer, or fill in missing technical details.");
+  lines.push("If a detail is missing or unclear, write exactly: `Not stated in case data`.");
+  lines.push("");
+  lines.push("## Objective");
+  lines.push("Analyze the attached Salesforce support case JSON and produce four outputs:");
+  lines.push("1. A concise executive case summary");
+  lines.push("2. A structured extraction of environment and key facts");
+  lines.push("3. A deduplicated chronological timeline");
+  lines.push("4. Two high-quality, ready-to-paste research prompts for internal AI tools such as Rovo or Copilot");
+  lines.push("");
+  lines.push("## Rules");
+  lines.push("1. Preserve exact error messages, fault codes, journal lines, trace lines, version strings, firmware versions, build numbers, and log text verbatim when present.");
+  lines.push("2. Separate confirmed facts from assumptions, theories, or open questions.");
+  lines.push("3. Do NOT claim a root cause unless the case data explicitly supports it.");
+  lines.push("4. Deduplicate repeated updates, but preserve contradictions and label them clearly.");
+  lines.push("5. For repeated troubleshooting steps, keep the earliest mention of the step and the latest stated outcome.");
+  lines.push("6. Exclude customer names, contact info, dates, case numbers, URLs, and any other PII from the generated research prompts.");
+  lines.push("7. Do not include case-management filler language.");
+  lines.push("8. Be concise, technical, and specific.");
+  lines.push("");
+  lines.push("## Output format");
+  lines.push("Return the response in EXACT markdown using the following structure and headings only:");
+  lines.push("");
+  lines.push("### 1. Case Summary");
+  lines.push("Provide a concise executive summary covering:");
+  lines.push("- the issue");
+  lines.push("- the customer goal");
+  lines.push("- the current case state");
+  lines.push("- the highest-risk blockers or unknowns");
+  lines.push("");
+  lines.push("### 2. Environment & Key Facts");
+  lines.push("Use the exact field labels below:");
+  lines.push("- **Primary product/component:**");
+  lines.push("- **Software/Hardware/Firmware versions:**");
+  lines.push("- **Exact error messages / logs / fault codes:**");
+  lines.push("- **Affected workflow or component:**");
+  lines.push("- **Trigger / recent change:**");
+  lines.push("- **What is working:**");
+  lines.push("- **What is failing:**");
+  lines.push("- **Troubleshooting already performed:**");
+  lines.push("- **Open questions / missing data:**");
+  lines.push("");
+  lines.push("### 3. Chronological Timeline");
+  lines.push("Create a deduplicated timeline in chronological order.");
+  lines.push("For each entry include:");
+  lines.push("- **Event / update:**");
+  lines.push("- **Action taken:**");
+  lines.push("- **Outcome / result:**");
+  lines.push("- **State change:**");
+  lines.push("");
+  lines.push("### 4. Research Prompts for Rovo / Copilot");
+  lines.push("Generate EXACTLY TWO distinct prompts inside separate fenced code blocks.");
+  lines.push("");
+  lines.push("#### Prompt 1: Error-Focused");
+  lines.push("This prompt must:");
+  lines.push("- Start with: `Act as an expert Support Escalation Engineer specializing in " + primaryProduct + ".`");
+  lines.push("- Instruct the AI to search internal KBs, Jira tickets, engineering notes, past emails, release notes, and known defects.");
+  lines.push("- Prioritize exact quoted error, log, and fault-code matches first.");
+  lines.push("- Include exact product, component, version, build, and firmware details when available.");
+  lines.push("- Ask for: top likely matches, why each match is relevant, known workaround, fixed-in version or patch if known, and confidence level.");
+  lines.push("- Explicitly exclude customer names, dates, case numbers, URLs, and PII.");
+  lines.push("");
+  lines.push("#### Prompt 2: Symptom-Focused");
+  lines.push("This prompt must:");
+  lines.push("- Start with: `Act as an expert Support Escalation Engineer specializing in " + primaryProduct + ".`");
+  lines.push("- Search for symptom-level matches even when no exact error match exists.");
+  lines.push("- Include the failing behavior, affected component, trigger or recent change, and what is working vs failing.");
+  lines.push("- Ask the AI to search for semantic matches, adjacent-version issues, regressions, architecture-specific defects, and workaround patterns.");
+  lines.push("- Ask for: top candidate issues, supporting evidence, likely next validation steps, workaround, and fixed-in version if known.");
+  lines.push("- Explicitly exclude customer names, dates, case numbers, URLs, and PII.");
+  lines.push("");
+  lines.push("## Case context");
+  lines.push("Case Number: " + caseNumber);
+  lines.push("Title: " + title);
+  if (url) lines.push("URL: " + url);
+
+  return lines.join("\\n");
+}
 
   global.CaseCleanerGpcrmParser = {
     classifyCard: classifyCard,
