@@ -1,0 +1,15 @@
+{
+  "name": "ccurate",
+  "version": "1.0.0",
+  "description": "CCurate is a specialized Chrome extension built to extract, normalize, deduplicate, and package Salesforce Lightning case activity for seamless Large Language Model (LLM) handoff.",
+  "main": "build.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^11.3.4"
+  }
+}

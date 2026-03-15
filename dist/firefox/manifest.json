@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "CCurate",
+  "version": "4.0.0",
+  "description": "Extract, normalize, dedupe, and package Salesforce case activity preview rows for LLM handoff.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "clipboardWrite",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.salesforce.com/*",
+    "*://*.lightning.force.com/*",
+    "*://*.force.com/*"
+  ],
+  "action": {
+    "default_title": "CCurate",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "type": "module"
+  }
+}

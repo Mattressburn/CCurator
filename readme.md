@@ -1,4 +1,4 @@
-Case Ingestor (formerly CaseCleaner / CCurator) is a specialized Chrome extension built to extract, normalize, deduplicate, and package Salesforce Lightning case activity for seamless Large Language Model (LLM) handoff.
+CCurate is a specialized Chrome extension built to extract, normalize, deduplicate, and package Salesforce Lightning case activity for seamless Large Language Model (LLM) handoff.
 
 Designed specifically for Technical Support Escalation Engineers, this tool pierces through Salesforce's complex Lightning Web Components (LWC) and Shadow DOMs to scrape case histories, strip out noisy email quotes, and generate highly targeted AI prompts for tools like ChatGPT, Claude, Atlassian Rovo, and Copilot Researcher.
 ✨ Key Features
@@ -25,13 +25,13 @@ Since this is a custom internal tool running on Manifest V3, you can load it dir
 
     Select the src/content/ directory containing the manifest.json file.
 
-    (Optional) Click the puzzle piece icon in Chrome and pin Case Ingestor to your toolbar for easy access.
+    (Optional) Click the puzzle piece icon in Chrome and pin CCurate to your toolbar for easy access.
 
 🛠️ How to Use
 
     Navigate to any active Salesforce Case view URL (e.g., /lightning/r/Case/12345678/view).
 
-    Click the Case Ingestor extension icon in your toolbar.
+    Click the CCurate extension icon in your toolbar.
 
     Click Scrape Current Case. The tool will poll the page, pierce the active tab's Shadow DOM, and extract the data.
 
