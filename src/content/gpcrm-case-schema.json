@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GPCRM Case Extraction Payload",
+  "type": "object",
+  "required": [
+    "url",
+    "caseNumber",
+    "title",
+    "extractedAt",
+    "emailsSummary",
+    "events",
+    "escalation",
+    "caseHistory",
+    "rawVisibleText"
+  ],
+  "properties": {
+    "url": { "type": "string" },
+    "caseNumber": { "type": "string" },
+    "title": { "type": "string" },
+    "extractedAt": { "type": "string", "format": "date-time" },
+    "emailsSummary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["subject", "from", "to", "date"],
+        "properties": {
+          "subject": { "type": "string" },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "date": { "type": "string" }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "label",
+          "actor",
+          "timestamp",
+          "text",
+          "originalText",
+          "translatedText",
+          "spanishDetected",
+          "translationAvailable"
+        ],
+        "properties": {
+          "type": { "type": "string" },
+          "label": { "type": "string" },
+          "actor": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "text": { "type": "string" },
+          "originalText": { "type": "string" },
+          "translatedText": { "type": "string" },
+          "spanishDetected": { "type": "boolean" },
+          "translationAvailable": { "type": "boolean" }
+        }
+      }
+    },
+    "escalation": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/event" }
+    },
+    "caseHistory": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/event" }
+    },
+    "rawVisibleText": { "type": "string" }
+  },
+  "$defs": {
+    "event": {
+      "type": "object",
+      "required": [
+        "type",
+        "label",
+        "actor",
+        "timestamp",
+        "text",
+        "originalText",
+        "translatedText",
+        "spanishDetected",
+        "translationAvailable"
+      ],
+      "properties": {
+        "type": { "type": "string" },
+        "label": { "type": "string" },
+        "actor": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "text": { "type": "string" },
+        "originalText": { "type": "string" },
+        "translatedText": { "type": "string" },
+        "spanishDetected": { "type": "boolean" },
+        "translationAvailable": { "type": "boolean" }
+      }
+    }
+  }
+}

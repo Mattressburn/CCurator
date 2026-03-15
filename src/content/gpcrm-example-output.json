@@ -1,0 +1,93 @@
+{
+  "url": "https://gpcrm.lightning.force.com/lightning/r/Case/500XXXXXXXXXXXX/view",
+  "caseNumber": "12345678",
+  "title": "12345678 | Case | Salesforce",
+  "extractedAt": "2026-03-14T12:00:00.000Z",
+  "emailsSummary": [
+    {
+      "subject": "Issue update from customer",
+      "from": "customer@example.com",
+      "to": "support@example.com",
+      "date": "3/14/2026, 9:15 AM"
+    },
+    {
+      "subject": "Case follow-up",
+      "from": "agent@example.com",
+      "to": "customer@example.com",
+      "date": "3/14/2026, 10:02 AM"
+    }
+  ],
+  "events": [
+    {
+      "type": "emailMessage",
+      "label": "Email Message",
+      "actor": "customer@example.com",
+      "timestamp": "3/14/2026, 9:15 AM",
+      "text": "Hola equipo, seguimos viendo el error al enviar el archivo.",
+      "originalText": "Hola equipo, seguimos viendo el error al enviar el archivo.",
+      "translatedText": "",
+      "spanishDetected": true,
+      "translationAvailable": false
+    },
+    {
+      "type": "caseAction",
+      "label": "Case Action",
+      "actor": "Support Agent",
+      "timestamp": "3/14/2026, 10:05 AM",
+      "text": "Collected logs and requested retry with updated endpoint.",
+      "originalText": "Collected logs and requested retry with updated endpoint.",
+      "translatedText": "",
+      "spanishDetected": false,
+      "translationAvailable": false
+    },
+    {
+      "type": "caseHistory",
+      "label": "Case History",
+      "actor": "System",
+      "timestamp": "3/14/2026, 10:06 AM",
+      "text": "Status changed from New to Working.",
+      "originalText": "Status changed from New to Working.",
+      "translatedText": "",
+      "spanishDetected": false,
+      "translationAvailable": false
+    },
+    {
+      "type": "escalationRfa",
+      "label": "Escalation RFA",
+      "actor": "Support Agent",
+      "timestamp": "3/14/2026, 10:10 AM",
+      "text": "Escalated to engineering for parser-side validation investigation.",
+      "originalText": "Escalated to engineering for parser-side validation investigation.",
+      "translatedText": "",
+      "spanishDetected": false,
+      "translationAvailable": false
+    }
+  ],
+  "escalation": [
+    {
+      "type": "escalationRfa",
+      "label": "Escalation RFA",
+      "actor": "Support Agent",
+      "timestamp": "3/14/2026, 10:10 AM",
+      "text": "Escalated to engineering for parser-side validation investigation.",
+      "originalText": "Escalated to engineering for parser-side validation investigation.",
+      "translatedText": "",
+      "spanishDetected": false,
+      "translationAvailable": false
+    }
+  ],
+  "caseHistory": [
+    {
+      "type": "caseHistory",
+      "label": "Case History",
+      "actor": "System",
+      "timestamp": "3/14/2026, 10:06 AM",
+      "text": "Status changed from New to Working.",
+      "originalText": "Status changed from New to Working.",
+      "translatedText": "",
+      "spanishDetected": false,
+      "translationAvailable": false
+    }
+  ],
+  "rawVisibleText": "Email Message From: customer@example.com Sent: 3/14/2026, 9:15 AM Subject: Issue update from customer ..."
+}

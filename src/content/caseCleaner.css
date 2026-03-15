@@ -1,0 +1,201 @@
+:root {
+  --cc-bg:      #1a222f;
+  --cc-bg-soft: #243042;
+  --cc-border:  #3a4a62;
+  --cc-fg:      #f2f5fa;
+  --cc-muted:   #b8c4d6;
+  --cc-accent:  #f0a531;
+  --cc-danger:  #a04554;
+}
+
+/* ── domHide.js placeholder ─────────────────────────────────────────────── */
+
+.cc-hidden-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 2px dashed #72839d;
+  border-radius: 6px;
+  background: #e9eef5;
+  color: #203047;
+  font: 600 12px/1.35 "Segoe UI", Tahoma, sans-serif;
+}
+
+.cc-show-btn {
+  border: 1px solid #2d5f9f;
+  border-radius: 4px;
+  background: #fff;
+  color: #153d68;
+  padding: 3px 10px;
+  font: 600 12px/1.2 "Segoe UI", Tahoma, sans-serif;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Panel chrome ────────────────────────────────────────────────────────── */
+
+.case-cleaner-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: min(460px, calc(100vw - 24px));
+  max-height: min(78vh, 700px);
+  z-index: 2147483600;
+  overflow: hidden;
+  border: 1px solid var(--cc-border);
+  border-radius: 12px;
+  background: linear-gradient(155deg, var(--cc-bg) 0%, #161c26 100%);
+  color: var(--cc-fg);
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
+  font: 12px/1.4 "Segoe UI", Tahoma, sans-serif;
+}
+
+.case-cleaner-panel-title {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--cc-border);
+  font: 700 13px/1.2 "Segoe UI", Tahoma, sans-serif;
+  letter-spacing: 0.2px;
+}
+
+.case-cleaner-panel-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--cc-border);
+}
+
+.case-cleaner-panel-btn {
+  min-height: 30px;
+  border: 1px solid #60718d;
+  border-radius: 6px;
+  background: var(--cc-bg-soft);
+  color: var(--cc-fg);
+  font: 600 12px/1 "Segoe UI", Tahoma, sans-serif;
+  cursor: pointer;
+}
+
+.case-cleaner-panel-btn:hover {
+  filter: brightness(1.08);
+}
+
+.case-cleaner-panel-btn-primary {
+  border-color: #f1b454;
+  background: var(--cc-accent);
+  color: #2e1c00;
+}
+
+.case-cleaner-panel-btn-danger {
+  border-color: #b86676;
+  background: var(--cc-danger);
+}
+
+.case-cleaner-panel-status {
+  padding: 8px 12px;
+  color: var(--cc-muted);
+  border-bottom: 1px solid var(--cc-border);
+}
+
+.case-cleaner-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--cc-border);
+}
+
+.case-cleaner-timeline {
+  padding: 8px 12px 10px;
+  overflow: auto;
+  max-height: 48vh;
+}
+
+/* ── render.js row items ─────────────────────────────────────────────────── */
+
+.cc-row {
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid #364860;
+  border-radius: 8px;
+  background: #1f2b3b;
+}
+
+.cc-row-head {
+  margin-bottom: 3px;
+  color: #f8d8a2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cc-row-num { opacity: 0.6; }
+
+.cc-row-kind {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #2d405e;
+  color: #b8d0f0;
+}
+
+.cc-dupe-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #6a3a00;
+  color: #ffd580;
+}
+
+/* Kind colour accents */
+.cc-kind-email   .cc-row-kind { background: #1a3a5c; color: #80c4f8; }
+.cc-kind-call    .cc-row-kind { background: #1a4020; color: #80e8a0; }
+.cc-kind-task    .cc-row-kind { background: #3a2060; color: #c8a0f8; }
+.cc-kind-unknown .cc-row-kind { background: #3a3020; color: #d0c080; }
+
+.cc-row-subject {
+  margin-bottom: 4px;
+  font-weight: 700;
+  color: #f0f4fc;
+}
+
+.cc-row-field {
+  font-size: 11px;
+  color: #aac0dc;
+  margin-bottom: 2px;
+}
+
+.cc-label {
+  font-weight: 700;
+  color: #7a9dc8;
+  margin-right: 2px;
+}
+
+.cc-row-text {
+  margin-top: 5px;
+  color: #c8d8f0;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0.85;
+}
+
+.cc-empty {
+  color: #8a9ab8;
+  font-style: italic;
+  padding: 8px;
+}
+
+@media (max-width: 740px) {
+  .case-cleaner-panel {
+    right: 8px;
+    bottom: 8px;
+    width: calc(100vw - 16px);
+    max-height: 80vh;
+  }
+}

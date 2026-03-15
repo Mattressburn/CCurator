@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Case Ingestor",
+  "version": "4.0.0",
+  "description": "Extract, normalize, dedupe, and package Salesforce case activity preview rows for LLM handoff.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "clipboardWrite",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.salesforce.com/*",
+    "*://*.lightning.force.com/*",
+    "*://*.force.com/*"
+  ],
+  "action": {
+    "default_title": "Case Ingestor",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "case-cleaner@local.dev",
+      "strict_min_version": "109.0"
+    }
+  }
+}

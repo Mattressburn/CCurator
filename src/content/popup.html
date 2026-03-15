@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Case Ingestor</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 12px;
+      width: 290px;
+      font: 13px/1.35 "Segoe UI", Tahoma, sans-serif;
+      background: #e8edf5;
+      color: #10253e;
+    }
+
+    .title {
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .row {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    button {
+      padding: 8px 10px;
+      border: 1px solid #476383;
+      border-radius: 6px;
+      background: #fff;
+      color: #123253;
+      cursor: pointer;
+      text-align: left;
+      font: 600 12px/1.25 "Segoe UI", Tahoma, sans-serif;
+    }
+
+    button:hover {
+      background: #e4effb;
+    }
+
+    button.primary {
+      border-color: #1d5ca2;
+      background: #1d5ca2;
+      color: #fff;
+    }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #4f6178;
+    }
+
+    .status {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #2f435a;
+      min-height: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="title">Case Ingestor</div>
+
+  <div class="row">
+    <button id="extractBtn" class="primary">Scrape Current Case</button>
+    <button id="copyJsonBtn">Copy JSON</button>
+    <button id="copyAiBtn">Copy AI Text</button>
+    <button id="exportBtn">Download JSON</button>
+  </div>
+
+  <div class="hint">
+    Works on the live Salesforce case page DOM only.
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
