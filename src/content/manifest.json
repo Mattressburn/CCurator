@@ -19,14 +19,6 @@
     "default_popup": "popup.html"
   },
   "background": {
-    "scripts": [
-      "background.js"
-    ]
-  },
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "case-cleaner@local.dev",
-      "strict_min_version": "109.0"
-    }
+    "service_worker": "background.js"
   }
 }

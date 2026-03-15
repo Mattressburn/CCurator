@@ -211,37 +211,37 @@
     };
   }
 
+  // Generates an optimized System Prompt requesting Rovo / Copilot meta-prompts
   function buildAiText(payload) {
     var lines = [];
-    lines.push("Case " + (payload.caseNumber || "unknown") + " | " + (payload.title || ""));
+
+    lines.push("I am providing a structured JSON payload containing extracted data from a Salesforce support case.");
+    lines.push("Case Number: " + (payload.caseNumber || "unknown") + " | " + (payload.title || ""));
     lines.push("URL: " + (payload.url || ""));
     lines.push("");
+    lines.push("Please act as an expert Technical Support Escalation Engineer. I will attach the JSON file separately. Based on the data in the JSON, please generate a comprehensive case analysis following this exact structure:");
+    lines.push("");
+    lines.push("### 1. Case Summary");
+    lines.push("Provide a concise executive summary of the issue, the customer's goal, and the current state of the case.");
+    lines.push("");
+    lines.push("### 2. Environment & Key Facts");
+    lines.push("- **Software/Hardware Versions:** (Extract all exact versions mentioned)");
+    lines.push("- **Exact Error Messages:** (Extract any error codes, logs, or fault messages verbatim)");
+    lines.push("- **Triggers / Recent Changes:** (Identify when this started and what changed immediately prior)");
+    lines.push("");
+    lines.push("### 3. Chronological Timeline");
+    lines.push("Create a clear, deduplicated timeline of events. Highlight how long the issue has been ongoing, what troubleshooting steps have already been taken, and the results of those steps.");
+    lines.push("");
+    lines.push("### 4. Research Prompts for Rovo / Copilot");
+    lines.push("Generate TWO distinct, ready-to-paste prompts that I can feed into our internal AI search tools (like Atlassian Rovo or Copilot Researcher) which search our internal KBs, Jira tickets, and past emails. Follow these strict rules for generating the prompts:");
+    lines.push("- **Assign a Persona:** Start each prompt with 'Act as an expert Support Escalation Engineer specializing in [insert primary hardware/software involved]...'");
+    lines.push("- **Define the Task:** Tell the AI to 'Search the internal knowledge base, past tickets, and engineering notes to find...'");
+    lines.push("- **Prompt 1 (Error-Focused):** Include the exact error messages, logs, or fault codes in quotes, combined with the specific software/hardware versions.");
+    lines.push("- **Prompt 2 (Symptom-Focused):** Describe the exact behavior, failing component, and recent triggers without relying on the exact error code.");
+    lines.push("- **Exclude Noise:** Ensure the generated prompts do NOT contain customer names, dates, case numbers, or PII.");
+    lines.push("Format each of the two generated prompts inside `code blocks` for easy 1-click copying.");
 
-    if ((payload.emailsSummary || []).length) {
-      lines.push("Emails Summary:");
-      for (var e = 0; e < payload.emailsSummary.length; e += 1) {
-        var em = payload.emailsSummary[e];
-        lines.push("- Subject: " + (em.subject || ""));
-        if (em.from) { lines.push("  From: " + em.from); }
-        if (em.to) { lines.push("  To: " + em.to); }
-        if (em.date) { lines.push("  Date: " + em.date); }
-      }
-      lines.push("");
-    }
-
-    lines.push("Timeline:");
-    for (var i = 0; i < (payload.events || []).length; i += 1) {
-      var ev = payload.events[i];
-      lines.push("- [" + ev.label + "] " + (ev.timestamp || "") + " " + (ev.actor || ""));
-      lines.push("  " + norm.normalizeWhitespace(ev.text || ""));
-      if (ev.translatedText) {
-        lines.push("  English: " + norm.normalizeWhitespace(ev.translatedText));
-      } else if (ev.spanishDetected) {
-        lines.push("  English: [translation unavailable in-browser]");
-      }
-    }
-
-    return norm.normalizeWhitespace(lines.join("\n"));
+    return lines.join("\n");
   }
 
   global.CaseCleanerGpcrmParser = {

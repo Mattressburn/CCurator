@@ -16,7 +16,7 @@
     }
     try {
       console.log("[CaseCleaner][content][" + stage + "]", details || {});
-    } catch (_err) {}
+    } catch (_err) { }
   }
 
   var bootContext = {
@@ -76,7 +76,7 @@
     debug: null,
     extracting: false,
     observer: null,
-    routeMatched: gpcrmExtract.isCaseRoute(bootContext.href),
+    routeMatched: (gpcrmExtract && typeof gpcrmExtract.isCaseRoute === "function") ? gpcrmExtract.isCaseRoute(bootContext.href) : false,
     includeDebugCards: false
   };
 
@@ -249,22 +249,19 @@
     return Promise.resolve({ ok: false, error: "Unknown action: " + type });
   }
 
-  var ext = global.browser || global.chrome;
-  if (ext && ext.runtime && ext.runtime.onMessage) {
-    ext.runtime.onMessage.addListener(function (message, _sender, sendResponse) {
-      handleAction(message).then(function (result) {
-        if (typeof sendResponse === "function") {
-          sendResponse(result);
-        }
-      }).catch(function (err) {
-        var errorText = (err && err.message) ? err.message : "Unexpected content error.";
-        if (typeof sendResponse === "function") {
-          sendResponse({ ok: false, error: errorText });
-        }
-      });
-      return true;
+  chrome.runtime.onMessage.addListener(function (message, _sender, sendResponse) {
+    handleAction(message).then(function (result) {
+      if (typeof sendResponse === "function") {
+        sendResponse(result);
+      }
+    }).catch(function (err) {
+      var errorText = (err && err.message) ? err.message : "Unexpected content error.";
+      if (typeof sendResponse === "function") {
+        sendResponse({ ok: false, error: errorText });
+      }
     });
-  }
+    return true;
+  });
 
   global.caseCleaner = {
     scrapeCurrentCase: doExtract,

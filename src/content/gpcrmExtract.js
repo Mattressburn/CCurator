@@ -10,20 +10,40 @@
 
   var SELECTORS = {
     cards: "article.slds-card",
-    openEmailBody: "#contentpage_emailTemplateBodyContent",
-    caseRootA: "#brandBand_2",
-    caseRootB: "one-record-home-flexipage2"
+    openEmailBody: "#contentpage_emailTemplateBodyContent"
   };
 
   function isCaseRoute(url) {
     return ROUTE_RE.test(String(url || ""));
   }
 
+  // Find the currently active tab so we don't scrape background cases
+  function getActiveContainer(doc) {
+    if (!doc) { return null; }
+    var activeTab = doc.querySelector(".oneWorkspaceTabWrapper.active") ||
+      doc.querySelector(".active.oneConsoleTab") ||
+      doc.querySelector(".windowViewMode-maximized.active") ||
+      doc.querySelector(".active.oneContent");
+    return activeTab || doc.body;
+  }
+
   function hasCaseRoots(doc) {
-    if (!doc || !doc.querySelector) {
+    var container = getActiveContainer(doc);
+    if (!container) {
       return false;
     }
-    return !!(doc.querySelector(SELECTORS.cards) || doc.querySelector(SELECTORS.caseRootA));
+
+    // Pierce the Shadow DOM to see if the cards are rendered in the ACTIVE tab
+    if (global.CaseCleanerUtils && global.CaseCleanerUtils.deepQueryAll) {
+      var deepCards = global.CaseCleanerUtils.deepQueryAll(container, SELECTORS.cards);
+      if (deepCards && deepCards.length > 0) {
+        return true;
+      }
+    } else if (container.querySelector(SELECTORS.cards)) {
+      return true;
+    }
+
+    return false;
   }
 
   function isReadyForScrape(doc, url) {
@@ -33,66 +53,37 @@
   function waitForStableDom(options) {
     var opts = options || {};
     var timeoutMs = typeof opts.timeoutMs === "number" ? opts.timeoutMs : 12000;
-    var settleMs = typeof opts.settleMs === "number" ? opts.settleMs : 450;
-    var pollMs = typeof opts.pollMs === "number" ? opts.pollMs : 120;
+    var pollMs = typeof opts.pollMs === "number" ? opts.pollMs : 250;
 
     return new Promise(function (resolve, reject) {
       var start = Date.now();
-      var settledTimer = null;
-      var observer = null;
       var intervalId = null;
 
       function done(ok, reason) {
-        if (observer) {
-          observer.disconnect();
-          observer = null;
-        }
         if (intervalId) {
           global.clearInterval(intervalId);
           intervalId = null;
         }
-        if (settledTimer) {
-          global.clearTimeout(settledTimer);
-          settledTimer = null;
-        }
         if (ok) {
-          resolve({ ok: true, reason: reason || "ready" });
+          resolve({ ok: true, reason: reason });
         } else {
           reject(new Error(reason || "Timed out waiting for stable case DOM."));
         }
       }
 
-      function checkReady() {
+      function check() {
         var href = String((global.location && global.location.href) || "");
-        if (!isReadyForScrape(global.document, href)) {
-          return false;
+        if (isReadyForScrape(global.document, href)) {
+          global.setTimeout(function () {
+            done(true, "ready");
+          }, 600);
+          return true;
         }
-        if (settledTimer) {
-          global.clearTimeout(settledTimer);
-        }
-        settledTimer = global.setTimeout(function () {
-          done(true, "stable");
-        }, settleMs);
-        return true;
+        return false;
       }
 
-      function tick() {
-        if ((Date.now() - start) > timeoutMs) {
-          done(false, "Timed out waiting for stable case DOM.");
-          return;
-        }
-        checkReady();
-      }
-
-      if (typeof global.MutationObserver !== "undefined" && global.document && global.document.documentElement) {
-        observer = new MutationObserver(function () {
-          checkReady();
-        });
-        observer.observe(global.document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: false
-        });
+      if (check()) {
+        return;
       }
 
       intervalId = global.setInterval(function () {
@@ -100,10 +91,11 @@
           done(false, "Timed out waiting for stable case DOM.");
           return;
         }
-        tick();
+        if (check()) {
+          global.clearInterval(intervalId);
+          intervalId = null;
+        }
       }, pollMs);
-
-      checkReady();
     });
   }
 
@@ -114,13 +106,34 @@
       return titleMatch[1];
     }
 
-    var bodyText = norm.normalizeWhitespace(norm.textFromElement(doc && doc.body)).slice(0, 3000);
+    var container = getActiveContainer(doc);
+    var bodyText = norm.normalizeWhitespace(norm.textFromElement(container)).slice(0, 3000);
     var fallback = bodyText.match(/\b(\d{5,10})\b/);
     return fallback ? fallback[1] : "";
   }
 
   function getCardBuckets(doc, includeDebugCards) {
-    var cards = doc.querySelectorAll(SELECTORS.cards);
+    var container = getActiveContainer(doc);
+    var cards = [];
+
+    // Scrape only from the active container
+    if (global.CaseCleanerUtils && global.CaseCleanerUtils.deepQueryAll) {
+      cards = global.CaseCleanerUtils.deepQueryAll(container, SELECTORS.cards);
+    } else {
+      cards = container.querySelectorAll(SELECTORS.cards);
+    }
+
+    // Filter to visible cards only to avoid background tabs
+    if (global.CaseCleanerUtils && global.CaseCleanerUtils.isElementVisible) {
+      var visibleCards = [];
+      for (var c = 0; c < cards.length; c += 1) {
+        if (global.CaseCleanerUtils.isElementVisible(cards[c])) {
+          visibleCards.push(cards[c]);
+        }
+      }
+      cards = visibleCards;
+    }
+
     var out = {
       emails: null,
       activityHistory: null,
@@ -153,15 +166,39 @@
   }
 
   function collectVisibleRawText(doc) {
-    return cleanup.normalizeTextHard(norm.textFromElement(doc && doc.body));
+    var container = getActiveContainer(doc);
+
+    if (global.CaseCleanerUtils && global.CaseCleanerUtils.getSearchRoots) {
+      var roots = global.CaseCleanerUtils.getSearchRoots(container);
+      var fullText = "";
+      for (var i = 0; i < roots.length; i++) {
+        var r = roots[i];
+        if (r === container) {
+          fullText += norm.textFromElement(r) + "\n";
+        } else if (r.nodeType === 11 && r.host) {
+          // Ignore Shadow DOMs belonging to hidden elements (like background tabs)
+          if (global.CaseCleanerUtils.isElementVisible(r.host)) {
+            fullText += norm.textFromElement(r) + "\n";
+          }
+        }
+      }
+      return cleanup.normalizeTextHard(fullText);
+    }
+
+    return cleanup.normalizeTextHard(norm.textFromElement(container));
   }
 
   function collectOpenEmailBody(doc) {
-    var el = doc.querySelector(SELECTORS.openEmailBody);
-    if (!el) {
-      return "";
+    var container = getActiveContainer(doc);
+    // Find all potential open email bodies inside this container
+    var els = container.querySelectorAll(SELECTORS.openEmailBody);
+    for (var i = 0; i < els.length; i++) {
+      // Ensure we only extract the text from the email body that is currently visible
+      if (global.CaseCleanerUtils && global.CaseCleanerUtils.isElementVisible(els[i])) {
+        return cleanup.stripQuotedEmailChain(norm.textFromElement(els[i]));
+      }
     }
-    return cleanup.stripQuotedEmailChain(norm.textFromElement(el));
+    return "";
   }
 
   function buildPayload(options) {
@@ -212,8 +249,6 @@
         routeMatched: isCaseRoute(url),
         cardCount: buckets.allCards.length,
         ignoredCards: buckets.ignored,
-        hasBrandBand: !!doc.querySelector(SELECTORS.caseRootA),
-        hasFlexipageRoot: !!doc.querySelector(SELECTORS.caseRootB),
         hasOpenEmailBody: !!openEmailBody
       }
     };
