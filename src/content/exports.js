@@ -5,11 +5,17 @@
     if (!payload) {
       return null;
     }
+
     return {
       url: String(payload.url || ""),
       caseNumber: String(payload.caseNumber || ""),
       title: String(payload.title || ""),
       extractedAt: String(payload.extractedAt || ""),
+      accountName: String(payload.accountName || ""),
+      contactName: String(payload.contactName || ""),
+      contactEmail: String(payload.contactEmail || ""),
+      customerName: String(payload.customerName || ""),
+      metadata: payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {},
       emailsSummary: Array.isArray(payload.emailsSummary) ? payload.emailsSummary.slice() : [],
       events: Array.isArray(payload.events) ? payload.events.slice() : [],
       escalation: Array.isArray(payload.escalation) ? payload.escalation.slice() : [],
@@ -29,14 +35,27 @@
 
     var p = buildPortablePayload(payload) || {};
     var lines = [];
+    var i;
+    var ev;
+
     lines.push("Case " + (p.caseNumber || "unknown") + " | " + (p.title || ""));
     lines.push("URL: " + (p.url || ""));
+    if (p.accountName) {
+      lines.push("Account: " + p.accountName);
+    }
+    if (p.contactName) {
+      lines.push("Contact: " + p.contactName);
+    }
+    if (p.contactEmail) {
+      lines.push("Contact Email: " + p.contactEmail);
+    }
     lines.push("");
 
-    for (var i = 0; i < (p.events || []).length; i += 1) {
-      var ev = p.events[i];
+    for (i = 0; i < (p.events || []).length; i += 1) {
+      ev = p.events[i];
       lines.push("[" + String(ev.label || ev.type || "event") + "] " + String(ev.timestamp || "") + " " + String(ev.actor || ""));
       lines.push(String(ev.translatedText || ev.text || ""));
+      lines.push("");
     }
 
     return lines.join("\n").trim();
@@ -64,21 +83,19 @@
     if (!payload) {
       return Promise.resolve(false);
     }
-
     if (global.navigator && global.navigator.clipboard && global.navigator.clipboard.writeText) {
       return global.navigator.clipboard.writeText(payload)
         .then(function () { return true; })
         .catch(function () { return execCopy(payload); });
     }
-
     return Promise.resolve(execCopy(payload));
   }
 
   function sanitizeFilename(input) {
     return String(input || "case")
-      .replace(/[^a-z0-9_-]+/gi, "-")
+      .replace(/[^a-z0-9_.-]+/gi, "-")
       .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
+      .replace(/^-+|-+$/g, "");
   }
 
   function downloadJson(payload, caseNumber) {
