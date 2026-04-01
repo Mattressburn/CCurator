@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-03-19T19:43:05.4717584Z",
+  "request": {
+    "workflow": "case-post-acceptance",
+    "source": "gpcrm-extension",
+    "correlationId": "d7b3cb79-14d9-4e1b-b978-4eec8b0f5c57",
+    "exportedAt": "2026-03-19T19:43:05.2213216Z",
+    "schemaVersion": "2.0",
+    "options": {
+      "createFolders": true,
+      "createOneNote": true,
+      "applySharing": false,
+      "dryRun": false
+    },
+    "case": {
+      "url": "https://gpcrm.lightning.force.com/lightning/r/Case/500Wy00000XsoD4IAJ/view",
+      "productVersion": "3.10",
+      "accountName": "Santa Clara Police Department",
+      "caseNumber": "13190513",
+      "contactEmail": "dedelman@edelmancorporation.com",
+      "customerName": "Santa Clara Police Department",
+      "issueStatement": "Auth field is greyed out despite being enabled",
+      "folderStem": "SantaClaraPoliceDepartment-13190513",
+      "primaryProduct": "C.CURE 9000",
+      "subjectLine": "US: [3.10] SSO Integration issue, OAuth field is greyed out",
+      "phone": "4088921204",
+      "contactName": "Dennis Edelman"
+    }
+  },
+  "response": {
+    "ok": true,
+    "correlationId": "d7b3cb79-14d9-4e1b-b978-4eec8b0f5c57",
+    "receivedAt": "2026-03-19T19:43:05.4707842Z",
+    "warnings": [],
+    "artifacts": {
+      "caseFolderName": "SantaClaraPoliceDepartment-13190513",
+      "oneNotePageTitle": "13190513 - Auth field is greyed out despite being enabled",
+      "safeCaseNumber": "13190513",
+      "safeFolderStem": "SantaClaraPoliceDepartment-13190513"
+    }
+  }
+}

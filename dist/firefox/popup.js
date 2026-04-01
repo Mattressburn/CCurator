@@ -3,8 +3,9 @@
 
   var ext = window.browser || window.chrome;
   var statusEl = document.getElementById("status");
+
   var SALESFORCE_HOST_RE = /(^|\.)salesforce\.com$|(^|\.)lightning\.force\.com$|(^|\.)force\.com$/i;
-  var GPCRM_CASE_ROUTE_RE = /\/lightning\/r\/Case\/[^/]+\/view(?:\?|#|$)/i;
+  var GPCRM_CASE_ROUTE_RE = /\/lightning\/r\/Case\/[^/]+\/view(?:[?#]|$)/i;
 
   function ccLog(stage, details) {
     try {
@@ -70,7 +71,6 @@
         return maybePromise;
       }
     } catch (_err) {}
-
     return new Promise(function (resolve, reject) {
       try {
         ext.tabs.query(queryInfo, function (tabs) {
@@ -94,7 +94,6 @@
         return maybePromise;
       }
     } catch (_err) {}
-
     return new Promise(function (resolve, reject) {
       try {
         ext.runtime.sendMessage(message, function (response) {
@@ -123,7 +122,6 @@
         });
       }
     } catch (_err) {}
-
     return new Promise(function (resolve, reject) {
       try {
         ext.tabs.sendMessage(tabId, message, function (response) {
@@ -179,7 +177,68 @@
   }
 
   function describeActionResult(resp) {
-    if (!resp) { return ""; }
+    if (!resp) {
+      return "";
+    }
+
+    if (resp.freshScrapeHappened || resp.handoffAttempted || resp.correlationId || resp.handoffLogPath) {
+      var lines = [];
+
+      lines.push(resp.ok ? "Export complete." : "Export failed.");
+
+      if (resp.freshScrapeHappened) {
+        lines.push("Fresh scrape: yes");
+      }
+
+      if (resp.extractedCaseNumber) {
+        lines.push("Extracted case: " + resp.extractedCaseNumber);
+      }
+
+      if (resp.visibleCaseNumberHint) {
+        lines.push("Visible case hint: " + resp.visibleCaseNumberHint);
+      }
+
+      if (resp.mismatchDetected) {
+        lines.push("Mismatch detected: yes");
+      }
+
+      if (resp.savedFileName) {
+        lines.push("Downloaded: " + resp.savedFileName);
+      }
+
+      if (resp.handoffAttempted) {
+        lines.push("Handoff attempted: yes");
+      }
+
+      lines.push("Handoff success: " + (resp.handoffSucceeded ? "yes" : "no"));
+
+      if (resp.requestOrigin) {
+        lines.push("Origin: " + resp.requestOrigin);
+      }
+
+      if (resp.correlationId) {
+        lines.push("CorrelationId: " + resp.correlationId);
+      }
+
+      if (resp.receivedCaseNumber) {
+        lines.push("Companion received case: " + resp.receivedCaseNumber);
+      }
+
+      if (resp.handoffLogPath) {
+        lines.push("Log: " + resp.handoffLogPath);
+      }
+
+      if (resp.handoffError) {
+        lines.push("Handoff error: " + resp.handoffError);
+      }
+
+      if (resp.error) {
+        lines.push("Error: " + resp.error);
+      }
+
+      return lines.join("\n");
+    }
+
     var tail = [];
     if (resp.stats && typeof resp.stats.events === "number") {
       tail.push("events=" + resp.stats.events);
@@ -269,7 +328,6 @@
           if (attemptedRecovery) {
             return failWith("Action failed after recovery: " + errText);
           }
-
           attemptedRecovery = true;
           setStatus("Receiver disappeared during action. Re-injecting...");
           return ensureInjected(activeTab.id, "missing receiver on action send").then(function (injection) {
@@ -301,12 +359,17 @@
       });
 
       if (response && response.ok === false) {
-        var failText = response.error || "Action failed in content script.";
+        var failText = describeActionResult(response) || response.error || "Action failed in content script.";
         setStatus(failText);
         return;
       }
 
-      setStatus((successText || "Done.") + describeActionResult(response));
+      if (actionType === "cCurate:exportJson") {
+        setStatus(describeActionResult(response));
+      } else {
+        setStatus((successText || "Done.") + describeActionResult(response));
+      }
+
       if (closeOnSuccess) {
         window.close();
       }
@@ -318,13 +381,27 @@
   document.getElementById("extractBtn").addEventListener("click", function () {
     runAction({ type: "cCurate:extract" }, "Case scraped.", false);
   });
+
   document.getElementById("copyJsonBtn").addEventListener("click", function () {
     runAction({ type: "cCurate:copyJson" }, "JSON copied.", false);
   });
+
   document.getElementById("copyAiBtn").addEventListener("click", function () {
     runAction({ type: "cCurate:copyAiText" }, "AI text copied.", false);
   });
+
   document.getElementById("exportBtn").addEventListener("click", function () {
-    runAction({ type: "cCurate:exportJson" }, "JSON download requested.", false);
+    runAction(
+      {
+        type: "cCurate:exportJson",
+        handoffEnabled: true,
+        companionOptions: {
+          endpoint: "http://127.0.0.1:38455/workflow/case",
+          timeoutMs: 4000
+        }
+      },
+      "Fresh scrape + JSON download + handoff requested.",
+      false
+    );
   });
 })();

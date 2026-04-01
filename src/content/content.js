@@ -76,7 +76,9 @@
     debug: null,
     extracting: false,
     observer: null,
-    routeMatched: (gpcrmExtract && typeof gpcrmExtract.isCaseRoute === "function") ? gpcrmExtract.isCaseRoute(bootContext.href) : false,
+    routeMatched: (gpcrmExtract && typeof gpcrmExtract.isCaseRoute === "function")
+      ? gpcrmExtract.isCaseRoute(bootContext.href)
+      : false,
     includeDebugCards: false
   };
 
@@ -152,9 +154,14 @@
         scheduleAutoRefresh();
 
         var stats = getStats();
+        var extractionContext = state.payload && state.payload.extractionContext ? state.payload.extractionContext : {};
+
         ccLog("extract-ok", {
           ms: Date.now() - startedAt,
           stats: stats,
+          caseNumber: state.payload && state.payload.caseNumber ? state.payload.caseNumber : "",
+          visibleCaseNumberHint: extractionContext.visibleCaseNumberHint || "",
+          pageUrl: extractionContext.pageUrl || state.payload.url || "",
           debug: getDebugMode() ? state.debug : undefined
         }, true);
 
@@ -163,6 +170,7 @@
           caseNumber: state.payload.caseNumber,
           title: state.payload.title,
           stats: stats,
+          extractionContext: extractionContext,
           debug: getDebugMode() ? state.debug : undefined
         };
       })
@@ -205,13 +213,88 @@
     });
   }
 
-  function doExportJson() {
-    var guard = requirePayload();
-    if (!guard.ok) {
-      return Promise.resolve(guard);
+  function getCompanionOptionsFromMessage(message) {
+    var msg = message || {};
+    return {
+      endpoint: String((msg.companionOptions && msg.companionOptions.endpoint) || "http://127.0.0.1:38455/workflow/case"),
+      timeoutMs: typeof (msg.companionOptions && msg.companionOptions.timeoutMs) === "number"
+        ? msg.companionOptions.timeoutMs
+        : 4000
+    };
+  }
+
+  function doExportJson(message) {
+    var msg = message || {};
+    var handoffEnabled = msg.handoffEnabled !== false;
+    var routeGuard = ensureRoute();
+
+    if (!routeGuard.ok) {
+      return Promise.resolve(routeGuard);
     }
-    var ok = exportsApi.downloadJson(state.payload, state.payload.caseNumber);
-    return Promise.resolve({ ok: !!ok, error: ok ? "" : "JSON download failed." });
+
+    return doExtract().then(function (extractResult) {
+      if (!extractResult || extractResult.ok === false) {
+        return {
+          ok: false,
+          error: (extractResult && extractResult.error) ? extractResult.error : "Fresh scrape failed before export."
+        };
+      }
+
+      if (!state.payload) {
+        return {
+          ok: false,
+          error: "No extracted payload after fresh scrape."
+        };
+      }
+
+      return exportsApi.exportCase(state.payload, {
+        handoffEnabled: handoffEnabled,
+        companionOptions: getCompanionOptionsFromMessage(msg),
+        meta: {
+          workflow: "case-post-acceptance",
+          options: {
+            createOneNote: true,
+            createFolders: true,
+            applySharing: false,
+            dryRun: false
+          }
+        }
+      }).then(function (result) {
+        var handoffResponse = result && result.handoffResponse ? result.handoffResponse : null;
+
+        var out = {
+          ok: !!(result && result.ok),
+          saved: !!(result && result.saved),
+          savedFileName: result && result.savedFileName ? result.savedFileName : "",
+          freshScrapeHappened: !!(result && result.freshScrapeHappened),
+          extractedCaseNumber: result && result.extractedCaseNumber ? result.extractedCaseNumber : "",
+          visibleCaseNumberHint: result && result.visibleCaseNumberHint ? result.visibleCaseNumberHint : "",
+          pageUrl: result && result.pageUrl ? result.pageUrl : "",
+          pageTitle: result && result.pageTitle ? result.pageTitle : "",
+          mismatchDetected: !!(result && result.mismatchDetected),
+          correlationId: result && result.correlationId ? result.correlationId : "",
+          requestOrigin: result && result.requestOrigin ? result.requestOrigin : "",
+          trigger: result && result.trigger ? result.trigger : "",
+          handoffAttempted: !!(result && result.handoffAttempted),
+          handoffSucceeded: !!(result && result.handoffSucceeded),
+          handoffResponse: handoffResponse,
+          handoffError: result && result.handoffError ? result.handoffError : null,
+          handoffLogPath: result && result.handoffLogPath ? result.handoffLogPath : "",
+          receivedCaseNumber: handoffResponse && handoffResponse.receivedCaseNumber ? handoffResponse.receivedCaseNumber : "",
+          receivedFolderStem: handoffResponse && handoffResponse.receivedFolderStem ? handoffResponse.receivedFolderStem : "",
+          receivedPageUrl: handoffResponse && handoffResponse.receivedPageUrl ? handoffResponse.receivedPageUrl : "",
+          error: result && result.error ? result.error : ""
+        };
+
+        ccLog("export-result", out, true);
+        return out;
+      });
+    }).catch(function (err) {
+      return {
+        ok: false,
+        error: (err && err.message) ? err.message : "Export/handoff failed after refresh."
+      };
+    });
   }
 
   function handleAction(message) {
@@ -220,6 +303,7 @@
     }
 
     var type = message.type;
+
     if (type === "cCurate:ping") {
       return Promise.resolve({
         ok: true,
@@ -230,10 +314,12 @@
         boot: global.__cCurateBoot
       });
     }
+
     if (type === "cCurate:extract") { return doExtract(); }
     if (type === "cCurate:copyJson") { return doCopyJson(); }
     if (type === "cCurate:copyAiText") { return doCopyAiText(); }
-    if (type === "cCurate:exportJson") { return doExportJson(); }
+    if (type === "cCurate:exportJson") { return doExportJson(message); }
+
     if (type === "cCurate:getPayload") {
       var guard = requirePayload();
       if (!guard.ok) {

@@ -9,6 +9,7 @@
     "gpcrmCleanup.js",
     "gpcrmParser.js",
     "gpcrmExtract.js",
+    "companionTransport.js",
     "exports.js",
     "content.js"
   ];
@@ -39,14 +40,6 @@
     };
   }
 
-  var inflightByTab = Object.create(null);
-
-  ccLog("boot", {
-    ok: true,
-    cssOrder: CSS_ORDER.slice(),
-    jsOrder: JS_ORDER.slice()
-  });
-
   function parseUrl(url) {
     try {
       return new URL(String(url || ""));
@@ -62,7 +55,13 @@
     return SALESFORCE_HOST_RE.test(parsed.hostname || "");
   }
 
-  // Removed: tabsGet, insertCss, runSequential legacy wrappers — MV3 scripting APIs return native Promises.
+  var inflightByTab = Object.create(null);
+
+  ccLog("boot", {
+    ok: true,
+    cssOrder: CSS_ORDER.slice(),
+    jsOrder: JS_ORDER.slice()
+  });
 
   function ensureInjected(tabId) {
     ccLog("ensureInjected-start", { tabId: tabId });
@@ -128,6 +127,90 @@
     });
   }
 
+  function handoffToCompanion(message) {
+    var endpoint = String((message && message.endpoint) || "http://127.0.0.1:38455/workflow/case");
+    var timeoutMs = typeof (message && message.timeoutMs) === "number" ? message.timeoutMs : 4000;
+    var envelope = message && message.envelope ? message.envelope : null;
+
+    if (!envelope || typeof envelope !== "object") {
+      return Promise.resolve({
+        attempted: false,
+        success: false,
+        response: null,
+        error: "Missing envelope."
+      });
+    }
+
+    var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = null;
+
+    if (controller) {
+      timer = global.setTimeout(function () {
+        try { controller.abort(); } catch (_e) { }
+      }, timeoutMs);
+    }
+
+    ccLog("handoff-start", {
+      endpoint: endpoint,
+      timeoutMs: timeoutMs,
+      correlationId: envelope.correlationId || "",
+      origin: envelope.origin || "",
+      trigger: envelope.trigger || "",
+      caseNumber: envelope.case && envelope.case.caseNumber ? envelope.case.caseNumber : ""
+    });
+
+    return fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(envelope),
+      signal: controller ? controller.signal : undefined
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        var parsed = null;
+        try { parsed = JSON.parse(text); } catch (_e) { }
+
+        var result = {
+          attempted: true,
+          success: !!res.ok,
+          status: res.status,
+          response: parsed,
+          rawText: text,
+          error: res.ok ? null : ("HTTP " + res.status)
+        };
+
+        ccLog("handoff-done", {
+          endpoint: endpoint,
+          success: result.success,
+          status: result.status,
+          correlationId: parsed && parsed.correlationId ? parsed.correlationId : envelope.correlationId || "",
+          requestOrigin: parsed && parsed.requestOrigin ? parsed.requestOrigin : envelope.origin || "",
+          receivedCaseNumber: parsed && parsed.receivedCaseNumber ? parsed.receivedCaseNumber : "",
+          logPath: parsed && parsed.logPath ? parsed.logPath : ""
+        });
+
+        return result;
+      });
+    }).catch(function (err) {
+      var out = {
+        attempted: true,
+        success: false,
+        response: null,
+        error: String(err || "fetch failed")
+      };
+      ccLog("handoff-error", {
+        endpoint: endpoint,
+        correlationId: envelope.correlationId || "",
+        error: out.error
+      });
+      return out;
+    }).then(function (result) {
+      if (timer) {
+        global.clearTimeout(timer);
+      }
+      return result;
+    });
+  }
+
   chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     var type = message && message.type;
     ccLog("message", {
@@ -152,11 +235,26 @@
       return true;
     }
 
+    if (type === "cCurate:handoffToCompanion") {
+      handoffToCompanion(message)
+        .then(function (result) {
+          sendResponse(result);
+        })
+        .catch(function (err) {
+          sendResponse({
+            attempted: true,
+            success: false,
+            response: null,
+            error: toErrorText(err)
+          });
+        });
+      return true;
+    }
+
     return undefined;
   });
 
   chrome.tabs.onRemoved.addListener(function (tabId) {
     delete inflightByTab[String(tabId)];
   });
-
 })(typeof self !== "undefined" ? self : this);
